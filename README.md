@@ -1,120 +1,186 @@
-# X-Tractor
+# 🔍 X-Tractor
 
-**Author:** [Cyberveil](https://github.com/Cyberveil)  
-**License:** GPLv3  
-**Status:** In development
+A command-line tool for extracting **Indicators of Compromise (IOCs)** from PCAP files, with optional **VirusTotal enrichment** for threat intelligence.
 
----
-
-## Overview
-
-**X-Tractor** is a Python tool that extracts Indicators of Compromise (IOCs) from `.pcap` files.  
-It supports selective filtering, deduplication, and exports results in multiple formats.
+Built for SOC analysts and incident responders who need to quickly triage network captures.
 
 ---
 
 ## Features
 
-- Parses PCAP traffic with `pyshark`
-- Supports targeted extraction of:
-  - IP addresses
-  - DNS domains
-  - SSL server names
-  - FTP commands
-  - SMTP addresses (including heuristics)
-  - Ports and services
-  - Raw data hashes (MD5, SHA1, SHA256)
-  - URIs
-- Outputs to CSV, JSON, Markdown, and HTML
-- Deduplication modes (`--dedup`, `--dedup-ip`)
-- CLI flags for quiet/verbose modes
+- **Multi-protocol extraction** — IP, DNS, SSL/TLS SNI, HTTP, FTP, SMTP, ports, payload hashes, URIs
+- **VirusTotal integration** — automatically enrich IPs, domains, URLs, and file hashes with reputation data
+- **Multiple export formats** — CSV, JSON, Markdown, HTML (dark-themed report)
+- **Deduplication** — remove duplicate IOCs across all or specific categories
+- **Input validation** — checks PCAP file exists, is readable, and non-empty before processing
+- **Verbose mode** — detailed packet-level logging for debugging
 
 ---
 
 ## Installation
 
 ```bash
-git clone https://github.com/Cyberveil/X-Tractor.git
+git clone https://github.com/VelvetB1te/X-Tractor.git
 cd X-Tractor
 pip install -r requirements.txt
 ```
 
-Python 3.9 or newer is recommended.
+**requirements.txt:**
+```
+pyshark
+requests
+```
+
+> ⚠️ `pyshark` requires [Wireshark/tshark](https://www.wireshark.org/download.html) to be installed on your system.
 
 ---
 
 ## Usage
 
-Basic example:
+### Basic extraction
 
 ```bash
-python3 tractor.py path/to/file.pcap --all --json
+# Extract IPs and DNS from a PCAP
+python3 tractor.py capture.pcap --ip --dns
+
+# Extract everything
+python3 tractor.py capture.pcap --all
+
+# Extract HTTP traffic (hosts, URIs, User-Agents, response codes)
+python3 tractor.py capture.pcap --http --verbose
 ```
 
-Selective extraction:
+### Deduplication
 
 ```bash
-python3 tractor.py path/to/file.pcap --ip --dns --uri --csv
+# Deduplicate all categories
+python3 tractor.py capture.pcap --all --dedup
+
+# Deduplicate IPs only
+python3 tractor.py capture.pcap --ip --dns --dedup-ip
+
+# Deduplicate DNS/SSL domains only
+python3 tractor.py capture.pcap --dns --ssl --dedup-domain
 ```
 
-With deduplication:
+### VirusTotal Enrichment
 
 ```bash
-python3 tractor.py path/to/file.pcap --all --dedup --html
+# Using a flag
+python3 tractor.py capture.pcap --ip --dns --vt-enrich --vt-key YOUR_API_KEY
+
+# Using an environment variable (recommended)
+export VT_API_KEY=your_api_key_here
+python3 tractor.py capture.pcap --all --dedup --vt-enrich
 ```
 
-Quiet mode:
+> 🔑 Get a free VirusTotal API key at [virustotal.com](https://www.virustotal.com)  
+> Free tier: 4 requests/minute, 500 requests/day
+
+### Export reports
 
 ```bash
-python3 tractor.py file.pcap --all --json --quiet
-```
+# Export to all formats
+python3 tractor.py capture.pcap --all --dedup --csv --json --md --html
 
-Verbose analysis:
-
-```bash
-python3 tractor.py file.pcap --smtp --verbose
+# Silent mode (no console output, just save files)
+python3 tractor.py capture.pcap --all --html --quiet
 ```
 
 ---
 
-## Output Formats
+## CLI Reference
 
-The tool can save reports in:
-- `CSV` → `filename_report.csv`
-- `JSON` → `filename_report.json`
-- `Markdown` → `filename_report.md`
-- `HTML` → `filename_report.html`
+| Flag | Description |
+|------|-------------|
+| `--ip` | Extract source/destination IP addresses |
+| `--dns` | Extract DNS query names |
+| `--ssl` | Extract SSL/TLS SNI hostnames |
+| `--http` | Extract HTTP hosts, URIs, User-Agents, response codes |
+| `--ftp` | Extract FTP commands |
+| `--smtp` | Extract SMTP parameters and email addresses |
+| `--port` | Extract TCP/UDP port connections |
+| `--hashes` | Hash raw packet payloads (MD5, SHA1, SHA256) |
+| `--uri` | Heuristic URI extraction from raw packets |
+| `--all` | Enable all filters above |
+| `--dedup` | Deduplicate all IOC categories |
+| `--dedup-ip` | Deduplicate IPs only |
+| `--dedup-domain` | Deduplicate DNS/SSL domains only |
+| `--vt-enrich` | Enrich IOCs with VirusTotal data |
+| `--vt-key KEY` | VirusTotal API key (or set `VT_API_KEY` env var) |
+| `--csv` | Save CSV report |
+| `--json` | Save JSON report |
+| `--md` | Save Markdown report |
+| `--html` | Save dark-themed HTML report |
+| `--verbose` | Show detailed processing info |
+| `--quiet` | Suppress console output |
 
 ---
 
-## Requirements
+## Screenshots
 
-See `requirements.txt` for all dependencies.  
-Core libraries:
-- `pyshark`
-- `requests`
-- `pandas`
+### Console Output — Live VirusTotal enrichment
+![Console Output](screenshots/Console-Results.png)
+
+### HTML Report — Dark theme with colour-coded VT scores
+![HTML Report](screenshots/Html-report-1.png)
+![HTML Report - Hashes](screenshots/Html-report-2.png)
+
+### Generated Report Files
+![Report Files](screenshots/report_files.png)
 
 ---
 
-## Roadmap
+## Example Output
 
-- Performance improvements
-- Advanced IOC enrichment
-- GUI frontend
-- Integration with threat platforms (MISP, OpenCTI)
-- Plugin support
+### Console
+```
+══════════════════════════════════════════════════
+  IP (2 entries)
+══════════════════════════════════════════════════
+  [27/04/2017 09:03:20 PM] 172.16.0.130    [VT: malicious=0 suspicious=0 reputation=0]
+  [27/04/2017 09:03:20 PM] 185.141.27.187  [VT: malicious=1 suspicious=0 reputation=0]
+
+══════════════════════════════════════════════════
+  HTTP (2 entries)
+══════════════════════════════════════════════════
+  [27/04/2017 09:03:20 PM] HOST: 185.141.27.187
+  [27/04/2017 09:03:20 PM] USER-AGENT: Mozilla/4.08 (Charon; Inferno)
+
+══════════════════════════════════════════════════
+  URI (1 entries)
+══════════════════════════════════════════════════
+  [27/04/2017 09:03:20 PM] http://185.141.27.187/danielsden/ver.php
+```
+
+### HTML Report
+
+Dark-themed table with colour-coded VirusTotal scores:
+- 🔴 Red = malicious detections
+- 🟡 Yellow = suspicious detections
+- 🟢 Green = clean
+
+---
+
+## Use Cases
+
+- **Incident Response** — quickly triage a suspicious PCAP from an endpoint
+- **Malware Analysis** — extract C2 IPs and domains from a malware sandbox capture
+- **Threat Hunting** — bulk-check IOCs against VirusTotal
+- **CTF / Blue Team challenges** — automate IOC extraction from challenge PCAPs
+
+---
+
+## Author
+
+Built by [VelvetB1te](https://github.com/VelvetB1te) — SOC analyst.
+
+- LinkedIn: [Tamerlan Shabanov](https://www.linkedin.com/in/tamerlan-shabanov-9b1ab1166)
+- GitHub: [VelvetB1te](https://github.com/VelvetB1te)
 
 ---
 
 ## License
 
 This project is licensed under the GNU General Public License v3.0.  
-See the [LICENSE](./LICENSE) file for full details.
-
----
-
-## Contact
-
-Developed by [Cyberveil](https://github.com/Cyberveil)  
-For bug reports or feature requests, please open an issue on GitHub.
+See the [LICENSE](LICENSE) file for full details.
