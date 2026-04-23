@@ -6,7 +6,7 @@ Built for SOC analysts and incident responders who need to quickly triage networ
 
 ---
 
-## Features
+## Features (Version 1.1.0)
 
 - **Multi-protocol extraction** — IP, DNS, SSL/TLS SNI, HTTP, FTP, SMTP, ports, payload hashes, URIs
 - **VirusTotal integration** — automatically enrich IPs, domains, URLs, and file hashes with reputation data
