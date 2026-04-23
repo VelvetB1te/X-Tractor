@@ -127,7 +127,7 @@ python3 tractor.py capture.pcap --all --html --quiet
 ![HTML Report - Hashes](screenshots/Html-report-2.png)
 
 ### Generated Report Files
-![Report Files](screenshots/report_files.png)
+![Report Files](screenshots/report-files.png)
 
 ---
 
